@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MiniTok</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <button class="tab" data-feed="following">Abonnements</button>
+  <button class="tab active" data-feed="foryou">Pour toi</button>
+</header>
+
+<main id="feed" class="feed"></main>
+
+<nav class="bottom">
+  <button data-nav="home" class="active">🏠<span>Accueil</span></button>
+  <button data-nav="search">🔍<span>Découvrir</span></button>
+  <button id="uploadBtn" class="plus">＋</button>
+  <button data-nav="inbox">💬<span>Messages</span></button>
+  <button data-nav="profile">👤<span>Profil</span></button>
+</nav>
+
+<input id="fileInput" type="file" accept="video/*" hidden>
+
+<section id="comments" class="sheet" hidden>
+  <div class="sheet-head"><span id="cCount"></span><button id="closeComments">✕</button></div>
+  <ul id="cList"></ul>
+  <form id="cForm"><input id="cInput" placeholder="Ajouter un commentaire..." autocomplete="off"><button>Envoyer</button></form>
+</section>
+
+<section id="profile" class="page" hidden>
+  <div class="avatar big">🙂</div>
+  <h2>@moi</h2>
+  <p><b id="pLikes">0</b> j'aime donnés · <b id="pPosts">0</b> vidéos</p>
+  <div id="pGrid" class="grid"></div>
+</section>
+
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
