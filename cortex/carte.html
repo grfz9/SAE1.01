@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cortex</title>
+<style>
+:root{
+  --bg:#0f0e12; --panel:#17161c; --panel2:#1e1d25; --line:#2a2833; --txt:#ecebf2;
+  --dim:#9a97a8; --faint:#5f5c6c; --accent:#7c6cff; --accent2:#4fd1c5; --warn:#ffb454;
+  --r:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+  font:14px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+button,input{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:270px 1fr 340px;height:100%;}
+aside{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:18px 16px;display:flex;flex-direction:column;gap:18px}
+aside.droite{border-right:0;border-left:1px solid var(--line)}
+.marque{display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:10px;background:conic-gradient(from 200deg,var(--accent),var(--accent2),var(--accent));display:grid;place-items:center;font-weight:800;color:#0f0e12}
+.marque b{display:block;font-size:15px;letter-spacing:.02em}
+.marque small{color:var(--dim)}
+h3{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);font-weight:600}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}
+.stat b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--dim)}
+.vital{display:flex;gap:12px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}
+.vital svg{flex:none}
+.vital p{margin:0;font-size:12px;color:var(--dim)}
+.vital p b{color:var(--txt);display:block;font-size:13px}
+.domaines{display:flex;flex-direction:column;gap:2px}
+.dom{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;border:1px solid transparent;background:none;text-align:left;width:100%}
+.dom:hover{background:var(--panel2)}
+.dom.actif{border-color:var(--line);background:var(--panel2)}
+.dom i{width:9px;height:9px;border-radius:50%;flex:none}
+.dom span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dom em{font-style:normal;color:var(--faint);font-variant-numeric:tabular-nums}
+.barre{display:flex;height:6px;border-radius:4px;overflow:hidden;gap:2px;margin-bottom:8px}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn:hover{border-color:var(--faint)}
+.centre{position:relative;overflow:hidden}
+canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
+canvas.drag{cursor:grabbing}
+.haut{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;
+  background:rgba(23,22,28,.85);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:12px;color:var(--dim);white-space:nowrap}
+.haut i{width:7px;height:7px;border-radius:50%;background:var(--accent2);box-shadow:0 0 8px var(--accent2)}
+.bas{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);width:min(520px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px}
+.chrono{display:flex;align-items:center;gap:10px;background:rgba(23,22,28,.85);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:999px;padding:6px 14px}
+.chrono button{width:26px;height:26px;border-radius:50%;border:0;background:var(--accent);color:#fff;cursor:pointer;flex:none;font-size:11px}
+.chrono input{flex:1;accent-color:var(--accent)}
+.chrono small{color:var(--dim);font-variant-numeric:tabular-nums;min-width:78px;text-align:right}
+.recherche{position:relative}
+.recherche input{width:100%;background:rgba(23,22,28,.92);border:1px solid var(--line);border-radius:12px;padding:10px 40px 10px 14px;outline:none}
+.recherche input:focus{border-color:var(--accent)}
+.recherche kbd{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:5px;padding:0 6px}
+.resultats{position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;max-height:260px;overflow:auto;display:none}
+.resultats.ouvert{display:block}
+.res{display:flex;gap:8px;align-items:center;padding:8px 12px;cursor:pointer}
+.res:hover,.res.sel{background:var(--panel2)}
+.res i{width:8px;height:8px;border-radius:50%;flex:none}
+.res small{color:var(--faint);margin-left:auto}
+.bulle{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12px;max-width:260px;display:none;z-index:5}
+.bulle b{display:block}
+.bulle span{color:var(--dim)}
+.fiche h2{margin:4px 0 6px;font-size:19px;line-height:1.25}
+.meta{display:flex;flex-wrap:wrap;gap:6px;font-size:11px;color:var(--dim)}
+.puce{border:1px solid var(--line);border-radius:999px;padding:2px 8px;display:inline-flex;align-items:center;gap:6px}
+.puce i{width:7px;height:7px;border-radius:50%}
+.corps{font-size:13.5px;color:#d7d5e0;overflow-wrap:anywhere}
+.corps h1,.corps h2,.corps h3,.corps h4{font-size:14px;margin:16px 0 6px;color:var(--txt);text-transform:none;letter-spacing:0}
+.corps p{margin:0 0 10px}
+.corps ul{margin:0 0 10px;padding-left:18px}
+.corps code{background:var(--panel2);border-radius:5px;padding:1px 5px;font-size:12px}
+.corps pre{background:var(--panel2);border-radius:8px;padding:10px;overflow:auto}
+.corps blockquote{margin:0 0 10px;border-left:3px solid var(--accent);padding-left:10px;color:var(--dim)}
+.corps a{color:var(--accent2)}
+.wl{color:var(--accent2);cursor:pointer;border-bottom:1px dashed currentColor}
+.wl.mort{color:var(--warn)}
+.liste{display:flex;flex-direction:column;gap:4px}
+.item{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;text-align:left;width:100%}
+.item:hover{border-color:var(--faint)}
+.item i{width:8px;height:8px;border-radius:50%;flex:none}
+.item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item small{color:var(--faint)}
+.vide{color:var(--faint);font-size:12px}
+.fermer{float:right;background:none;border:0;color:var(--dim);cursor:pointer;font-size:18px;line-height:1}
+.pied{margin-top:auto;font-size:11px;color:var(--faint)}
+.mobile-onglets{display:none}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  aside{position:fixed;z-index:20;left:0;right:0;bottom:0;max-height:62vh;border:0;border-top:1px solid var(--line);
+    border-radius:18px 18px 0 0;transform:translateY(110%);transition:transform .25s;box-shadow:0 -20px 40px rgba(0,0,0,.5)}
+  aside.ouvert{transform:none}
+  .centre{height:100%}
+  .mobile-onglets{display:flex;position:absolute;top:12px;right:12px;gap:6px;z-index:6}
+  .haut{display:none}
+  .haut{left:12px;transform:none}
+  .bas{bottom:calc(12px + env(safe-area-inset-bottom))}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="gauche" id="gauche">
+    <div class="marque"><div class="logo">C</div><div><b>CORTEX</b><small id="nomCerveau"></small></div></div>
+    <section><h3>En chiffres</h3>
+      <div class="stats">
+        <div class="stat"><b id="sFiches">0</b><span>fiches</span></div>
+        <div class="stat"><b id="sLiens">0</b><span>liens</span></div>
+        <div class="stat"><b id="sMots">0</b><span>mots</span></div>
+        <div class="stat"><b id="sJours">0</b><span>jours</span></div>
+      </div>
+    </section>
+    <section class="vital" title="Part de fiches reliées, fraîcheur des 30 derniers jours et liens cassés">
+      <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="#2a2833" stroke-width="5"/>
+        <circle id="vCercle" cx="23" cy="23" r="19" fill="none" stroke="#4fd1c5" stroke-width="5" stroke-linecap="round" transform="rotate(-90 23 23)" stroke-dasharray="0 200"/>
+        <text id="vScore" x="23" y="27" text-anchor="middle" fill="#ecebf2" font-size="12" font-weight="700">0</text></svg>
+      <p><b id="vTitre">Vitalité</b><span id="vDetail"></span></p>
+    </section>
+    <section><h3>Domaines <span id="nbDom" style="float:right"></span></h3>
+      <div class="barre" id="barreDom"></div>
+      <div class="domaines" id="domaines"></div>
+    </section>
+    <button class="btn" id="capture">📸 Capture de la carte</button>
+    <div class="pied" id="pied"></div>
+  </aside>
+
+  <main class="centre" id="centre">
+    <canvas id="c"></canvas>
+    <div class="haut"><i></i><span>Relu par Claude avant chaque réponse</span></div>
+    <div class="mobile-onglets"><button class="btn" id="mStats">Stats</button><button class="btn" id="mFiche">Fiches</button></div>
+    <div class="bulle" id="bulle"></div>
+    <div class="bas">
+      <div class="chrono"><button id="lecture" title="Rejouer la croissance">▶</button>
+        <input type="range" id="temps" min="0" max="1000" value="1000"><small id="date">aujourd'hui</small></div>
+      <div class="recherche"><div class="resultats" id="resultats"></div>
+        <input id="q" placeholder="Chercher une fiche…" autocomplete="off"><kbd>/</kbd></div>
+    </div>
+  </main>
+
+  <aside class="droite" id="droite"></aside>
+</div>
+
+<script>
+const D = {"nom": "moi", "genere": "2026-11-07T10:04", "fiches": [{"id": "apprentissage", "titre": "Apprentissage", "domaine": "apprentissage", "tags": ["formation"], "resume": "Ce que j'apprends : cours, livres, vidéos, leçons tirées de mes erreurs.", "cree": "2026-11-07", "maj": "2026-11-07", "toujours": false, "type": "hub", "chemin": "fiches/apprentissage/apprentissage.md", "contenu": "# Apprentissage\n\nNote l'essentiel de chaque chose apprise, en 5 lignes max, et relie-la au domaine où elle sert.\n\nLié à : [[moi]]\n", "mots": 23, "liens": ["moi"], "manquants": []}, {"id": "cortex", "titre": "Cortex", "domaine": "cortex", "tags": ["mode-emploi"], "resume": "Comment fonctionne ce second cerveau.", "cree": "2026-11-07", "maj": "2026-11-07", "toujours": false, "type": "hub", "chemin": "fiches/cortex/cortex.md", "contenu": "# Cortex\n\nLe Cortex est un dossier de fiches Markdown reliées entre elles.\nClaude les relit avant chaque réponse et y range ce qui compte.\n\n- Comment l'utiliser : [[mode-emploi]]\n- Les règles suivies par Claude sont dans CLAUDE.md.\n\nLié à : [[moi]]\n", "mots": 41, "liens": ["mode-emploi", "moi"], "manquants": []}, {"id": "mode-emploi", "titre": "Mode d'emploi", "domaine": "cortex", "tags": ["aide", "commandes"], "resume": "Les commandes et les bons réflexes pour faire grandir le Cortex.", "cree": "2026-11-07", "maj": "2026-11-07", "toujours": false, "type": "", "chemin": "fiches/cortex/mode-emploi.md", "contenu": "# Mode d'emploi\n\n**Parle normalement à Claude** : il range tout seul ce qui mérite d'être retenu.\n\nCommandes utiles :\n- `/fiche <texte>` : range une info précise.\n- `/ranger` : relit la conversation et range tout ce qui compte.\n- `/relier` : ajoute les liens qui manquent entre les fiches.\n- `/bilan` : fait le point (orphelines, doublons, infos obsolètes).\n- `/carte` : ouvre la carte de ton cerveau.\n\nBons réflexes :\n- Commence par remplir [[moi]] et [[objectifs]].\n- Une fiche = une idée. Les liens comptent autant que le contenu.\n\nLié à : [[cortex]]\n", "mots": 81, "liens": ["moi", "objectifs", "cortex"], "manquants": []}, {"id": "ecommerce", "titre": "E-commerce", "domaine": "ecommerce", "tags": ["boutique"], "resume": "Tout ce qui concerne ma boutique en ligne : produits, fournisseurs, prix, pub, clients.", "cree": "2026-11-07", "maj": "2026-11-07", "toujours": false, "type": "hub", "chemin": "fiches/ecommerce/ecommerce.md", "contenu": "# E-commerce\n\nEntrée du domaine e-commerce.\n\n- Boutique : [[ma-boutique]]\n- Produits : …\n- Fournisseurs : …\n- Publicité : …\n\nLié à : [[moi]], [[reseaux-sociaux]]\n", "mots": 18, "liens": ["ma-boutique", "moi", "reseaux-sociaux"], "manquants": []}, {"id": "ma-boutique", "titre": "Ma boutique", "domaine": "ecommerce", "tags": ["boutique", "plateforme"], "resume": "Les infos de base sur ma boutique.", "cree": "2026-11-07", "maj": "2026-11-07", "toujours": false, "type": "", "chemin": "fiches/ecommerce/ma-boutique.md", "contenu": "# Ma boutique\n\nÀ compléter : nom, plateforme (Shopify…), niche, panier moyen, marge cible.\n\nLié à : [[ecommerce]]\n", "mots": 15, "liens": ["ecommerce"], "manquants": []}, {"id": "idees", "titre": "Idées", "domaine": "idees", "tags": ["brouillon"], "resume": "Les idées en vrac, avant qu'elles deviennent des projets.", "cree": "2026-11-07", "maj": "2026-11-07", "toujours": false, "type": "hub", "chemin": "fiches/idees/idees.md", "contenu": "# Idées\n\nUne idée = une fiche courte. Quand une idée devient sérieuse, relie-la à [[projets]].\n\nLié à : [[moi]]\n", "mots": 18, "liens": ["projets", "moi"], "manquants": []}, {"id": "moi", "titre": "Moi", "domaine": "moi", "tags": ["profil"], "resume": "Qui je suis, ce que je fais et comment je veux que Claude me réponde.", "cree": "2026-11-07", "maj": "2026-11-07", "toujours": true, "type": "hub", "chemin": "fiches/moi/moi.md", "contenu": "# Moi\n\n**À compléter avec Claude** (dis-lui : « pose-moi des questions pour remplir ma fiche Moi »).\n\n- Prénom :\n- Ce que je fais :\n- Mes objectifs du moment : voir [[objectifs]]\n- Comment me répondre : voir [[style-de-reponse]]\n\nMes domaines : [[ecommerce]], [[reseaux-sociaux]], [[projets]], [[idees]], [[apprentissage]], [[cortex]]\n", "mots": 43, "liens": ["objectifs", "style-de-reponse", "ecommerce", "reseaux-sociaux", "projets", "idees", "apprentissage", "cortex"], "manquants": []}, {"id": "objectifs", "titre": "Objectifs", "domaine": "moi", "tags": ["objectifs", "priorites"], "resume": "Mes objectifs actuels, du plus important au moins important.", "cree": "2026-11-07", "maj": "2026-11-07", "toujours": false, "type": "", "chemin": "fiches/moi/objectifs.md", "contenu": "# Objectifs\n\nÀ compléter.\n\n1. …\n2. …\n3. …\n\nLié à : [[moi]], [[projets]]\n", "mots": 10, "liens": ["moi", "projets"], "manquants": []}, {"id": "style-de-reponse", "titre": "Style de réponse", "domaine": "moi", "tags": ["preferences", "style"], "resume": "Comment je veux que Claude me parle.", "cree": "2026-11-07", "maj": "2026-11-07", "toujours": true, "type": "", "chemin": "fiches/moi/style-de-reponse.md", "contenu": "# Style de réponse\n\n- Réponds en français, tutoie-moi.\n- Va droit au but : la réponse d'abord, les explications ensuite si besoin.\n- Donne des exemples concrets et des chiffres quand c'est possible.\n\nLié à : [[moi]]\n", "mots": 35, "liens": ["moi"], "manquants": []}, {"id": "projets", "titre": "Projets", "domaine": "projets", "tags": ["suivi"], "resume": "Mes projets en cours et terminés.", "cree": "2026-11-07", "maj": "2026-11-07", "toujours": false, "type": "hub", "chemin": "fiches/projets/projets.md", "contenu": "# Projets\n\nUne fiche par projet : objectif, étapes, décisions, résultat.\n\nLié à : [[moi]], [[objectifs]]\n", "mots": 13, "liens": ["moi", "objectifs"], "manquants": []}, {"id": "ce-qui-marche", "titre": "Ce qui marche", "domaine": "reseaux-sociaux", "tags": ["hooks", "stats"], "resume": "Les formats, hooks et sujets qui ont le mieux performé.", "cree": "2026-11-07", "maj": "2026-11-07", "toujours": false, "type": "", "chemin": "fiches/reseaux-sociaux/ce-qui-marche.md", "contenu": "# Ce qui marche\n\nNote ici chaque contenu qui a bien marché, avec la date et les chiffres (vues, likes, ventes).\n\nLié à : [[reseaux-sociaux]]\n", "mots": 24, "liens": ["reseaux-sociaux"], "manquants": []}, {"id": "reseaux-sociaux", "titre": "Réseaux sociaux", "domaine": "reseaux-sociaux", "tags": ["contenu"], "resume": "Mes comptes, ce qui marche, mes idées de contenu.", "cree": "2026-11-07", "maj": "2026-11-07", "toujours": false, "type": "hub", "chemin": "fiches/reseaux-sociaux/reseaux-sociaux.md", "contenu": "# Réseaux sociaux\n\nEntrée du domaine réseaux sociaux.\n\n- Comptes : …\n- Ce qui marche : [[ce-qui-marche]]\n\nLié à : [[moi]], [[ecommerce]]\n", "mots": 18, "liens": ["ce-qui-marche", "moi", "ecommerce"], "manquants": []}], "liens": [["apprentissage", "moi"], ["cortex", "mode-emploi"], ["cortex", "moi"], ["mode-emploi", "moi"], ["mode-emploi", "objectifs"], ["ecommerce", "ma-boutique"], ["ecommerce", "moi"], ["ecommerce", "reseaux-sociaux"], ["idees", "projets"], ["idees", "moi"], ["moi", "objectifs"], ["moi", "style-de-reponse"], ["moi", "reseaux-sociaux"], ["moi", "projets"], ["objectifs", "projets"], ["ce-qui-marche", "reseaux-sociaux"]]} || {nom:"moi",fiches:[],liens:[]};
+const PALETTE = ["#7c6cff","#4fd1c5","#ff7a90","#ffb454","#6cc4ff","#b6e36b","#e58cff","#ff9a5a","#9aa3ff","#5fe0a0","#f4d35e","#c99a7a"];
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => n.toLocaleString("fr-FR");
+const jour = s => new Date(s + "T12:00:00");
+const dateFr = s => jour(s).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"});
+
+// ---------- données ----------
+const fiches = D.fiches, parId = new Map(fiches.map(f => [f.id, f]));
+const domaines = [...new Set(fiches.map(f => f.domaine))]
+  .sort((a,b) => fiches.filter(f=>f.domaine===b).length - fiches.filter(f=>f.domaine===a).length);
+const couleur = Object.fromEntries(domaines.map((d,i) => [d, PALETTE[i % PALETTE.length]]));
+const voisins = new Map(fiches.map(f => [f.id, new Set()]));
+const liens = D.liens.filter(([a,b]) => parId.has(a) && parId.has(b));
+liens.forEach(([a,b]) => { voisins.get(a).add(b); voisins.get(b).add(a); });
+const entrants = id => fiches.filter(f => f.liens.includes(id));
+const dates = fiches.map(f => f.cree).sort();
+const t0 = dates.length ? jour(dates[0]).getTime() : Date.now(), t1 = Date.now();
+
+// ---------- panneau gauche ----------
+$("#nomCerveau").textContent = "Cerveau de " + D.nom;
+document.title = "Cortex · " + D.nom;
+$("#sFiches").textContent = fmt(fiches.length);
+$("#sLiens").textContent = fmt(liens.length);
+$("#sMots").textContent = fmt(fiches.reduce((s,f) => s + f.mots, 0));
+$("#sJours").textContent = fmt(Math.max(1, Math.round((t1 - t0) / 864e5)));
+(function vitalite(){
+  if (!fiches.length) { $("#vDetail").textContent = "Aucune fiche pour l'instant"; return; }
+  const reliees = fiches.filter(f => voisins.get(f.id).size).length / fiches.length;
+  const il30 = new Date(Date.now() - 30*864e5).toISOString().slice(0,10);
+  const fraiches = Math.min(1, fiches.filter(f => f.maj >= il30).length / Math.max(5, fiches.length * .25));
+  const casses = fiches.reduce((s,f) => s + (f.manquants||[]).length, 0);
+  const score = Math.round(Math.max(0, 60*reliees + 40*fraiches - Math.min(15, casses)));
+  $("#vScore").textContent = score;
+  $("#vCercle").setAttribute("stroke-dasharray", `${score/100*119.4} 200`);
+  $("#vTitre").textContent = score >= 75 ? "Ton cerveau est bien vivant" : score >= 45 ? "Ton cerveau se réveille" : "Ton cerveau a faim";
+  $("#vDetail").textContent = `${Math.round(reliees*100)} % reliées · ${casses} lien(s) cassé(s)`;
+})();
+$("#nbDom").textContent = domaines.length;
+$("#barreDom").innerHTML = domaines.map(d => `<span style="flex:${fiches.filter(f=>f.domaine===d).length};background:${couleur[d]}"></span>`).join("");
+let filtreDom = null;
+function dessinerDomaines(){
+  $("#domaines").innerHTML = domaines.map(d => `<button class="dom ${filtreDom===d?"actif":""}" data-d="${esc(d)}">
+    <i style="background:${couleur[d]}"></i><span>${esc(d)}</span><em>${fiches.filter(f=>f.domaine===d).length}</em></button>`).join("");
+}
+$("#domaines").onclick = e => { const b = e.target.closest(".dom"); if (!b) return;
+  filtreDom = filtreDom === b.dataset.d ? null : b.dataset.d; dessinerDomaines(); reveil(); };
+dessinerDomaines();
+$("#pied").textContent = D.genere ? "Carte générée le " + new Date(D.genere).toLocaleString("fr-FR",{dateStyle:"medium",timeStyle:"short"}) : "";
+
+// ---------- graphe (simulation de forces) ----------
+const cv = $("#c"), ctx = cv.getContext("2d");
+let W = 0, H = 0, dpr = 1;
+const vue = {x:0, y:0, k:1};
+const noeuds = fiches.map((f,i) => {
+  const a = i * 2.39996, r = 12 * Math.sqrt(i + 1);
+  return {f, x: Math.cos(a)*r, y: Math.sin(a)*r, vx:0, vy:0, r: 3 + Math.min(9, Math.sqrt(voisins.get(f.id).size) * 1.9), t: jour(f.cree).getTime()};
+});
+const nParId = new Map(noeuds.map(n => [n.f.id, n]));
+const aretes = liens.map(([a,b]) => [nParId.get(a), nParId.get(b)]);
+let alpha = 1, fige = null;
+function reveil(a = .3){ alpha = Math.max(alpha, a); }
+
+function tick(){
+  if (alpha < .004) return;
+  const n = noeuds.length, rep = 900;
+  for (let i = 0; i < n; i++) {
+    const a = noeuds[i];
+    for (let j = i + 1; j < n; j++) {
+      const b = noeuds[j]; let dx = a.x - b.x, dy = a.y - b.y, d2 = dx*dx + dy*dy + .01;
+      if (d2 > 90000) continue;
+      const f = rep * alpha / d2; dx *= f; dy *= f;
+      a.vx += dx; a.vy += dy; b.vx -= dx; b.vy -= dy;
+    }
+  }
+  for (const [a,b] of aretes) {
+    const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx*dx + dy*dy) || 1;
+    const f = (d - 46) / d * .06 * alpha;
+    a.vx += dx*f; a.vy += dy*f; b.vx -= dx*f; b.vy -= dy*f;
+  }
+  for (const p of noeuds) {
+    if (p === fige) { p.vx = p.vy = 0; continue; }
+    p.vx -= p.x * .004 * alpha; p.vy -= p.y * .004 * alpha;
+    p.vx *= .55; p.vy *= .55; p.x += p.vx; p.y += p.vy;
+  }
+  alpha *= .985;
+}
+
+function taille(){
+  dpr = window.devicePixelRatio || 1;
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+}
+function cadrer(){
+  if (!noeuds.length) return;
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for (const p of noeuds){ x0=Math.min(x0,p.x); y0=Math.min(y0,p.y); x1=Math.max(x1,p.x); y1=Math.max(y1,p.y); }
+  const k = Math.min(2.2, .82 * Math.min(W / (x1-x0+80), (H - 120) / (y1-y0+80)));
+  vue.k = k; vue.x = -(x0+x1)/2*k; vue.y = -(y0+y1)/2*k - 20;
+}
+const ecran = p => [W/2 + vue.x + p.x*vue.k, H/2 + vue.y + p.y*vue.k];
+const monde = (sx, sy) => [(sx - W/2 - vue.x)/vue.k, (sy - H/2 - vue.y)/vue.k];
+
+let tLimite = Infinity, survol = null, choisi = null, correspond = null;
+const visible = p => p.t <= tLimite;
+function estActif(p){
+  if (correspond) return correspond.has(p.f.id);
+  if (filtreDom) return p.f.domaine === filtreDom;
+  if (choisi) return p === choisi || voisins.get(choisi.f.id).has(p.f.id);
+  return true;
+}
+
+function dessiner(now){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  const g = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.7);
+  g.addColorStop(0,"#17151f"); g.addColorStop(1,"#0f0e12");
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  const focus = choisi || survol;
+  ctx.lineWidth = 1;
+  for (const [a,b] of aretes) {
+    if (!visible(a) || !visible(b)) continue;
+    const lie = focus && (a === focus || b === focus);
+    const actif = estActif(a) && estActif(b);
+    ctx.strokeStyle = lie ? "rgba(124,108,255,.85)" : actif ? "rgba(160,150,200,.16)" : "rgba(160,150,200,.04)";
+    ctx.lineWidth = lie ? 1.6 : 1;
+    const [x1,y1] = ecran(a), [x2,y2] = ecran(b);
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  }
+  const pulse = .5 + .5*Math.sin(now/600);
+  for (const p of noeuds) {
+    if (!visible(p)) continue;
+    const [x,y] = ecran(p), r = p.r * Math.max(.7, Math.min(1.6, vue.k));
+    if (x < -20 || y < -20 || x > W+20 || y > H+20) continue;
+    const actif = estActif(p);
+    ctx.globalAlpha = actif ? 1 : .12;
+    if (p === focus || (correspond && actif)) {
+      ctx.fillStyle = couleur[p.f.domaine] + "33";
+      ctx.beginPath(); ctx.arc(x,y,r + 6 + pulse*4,0,7); ctx.fill();
+    }
+    ctx.fillStyle = couleur[p.f.domaine];
+    ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+    if (p.f.type === "hub") { ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke(); }
+  }
+  ctx.globalAlpha = 1;
+  // étiquettes : survol, sélection, voisins sélectionnés, ou zoom fort
+  ctx.font = "12px system-ui,sans-serif"; ctx.textAlign = "center";
+  for (const p of noeuds) {
+    if (!visible(p)) continue;
+    const montrer = p === focus || (choisi && voisins.get(choisi.f.id).has(p.f.id)) || (vue.k > 1.6 && estActif(p)) || p.f.type === "hub";
+    if (!montrer) continue;
+    const [x,y] = ecran(p);
+    ctx.fillStyle = p === focus ? "#fff" : "rgba(236,235,242,.75)";
+    ctx.fillText(p.f.titre.length > 32 ? p.f.titre.slice(0,31)+"…" : p.f.titre, x, y - p.r*Math.max(.7,Math.min(1.6,vue.k)) - 6);
+  }
+  if (!noeuds.length) {
+    ctx.fillStyle = "#5f5c6c"; ctx.textAlign = "center"; ctx.font = "15px system-ui";
+    ctx.fillText("Aucune fiche. Demande à Claude : /fiche ce que tu veux retenir", W/2, H/2);
+  }
+}
+
+function boucle(now){ tick(); if (lecture) avancer(); dessiner(now); requestAnimationFrame(boucle); }
+
+// ---------- interactions ----------
+function noeudSous(sx, sy){
+  const [x,y] = monde(sx, sy); let best = null, bd = Infinity;
+  for (const p of noeuds) { if (!visible(p)) continue;
+    const d = Math.hypot(p.x - x, p.y - y), lim = (p.r + 6) / Math.min(vue.k, 1.6) * Math.max(1, 1/vue.k*.6);
+    if (d < Math.max(lim, 8/vue.k) && d < bd) { bd = d; best = p; } }
+  return best;
+}
+const pointeurs = new Map(); let glisse = null, bouge = false, pinch = 0;
+cv.addEventListener("pointerdown", e => {
+  cv.setPointerCapture(e.pointerId); pointeurs.set(e.pointerId, [e.offsetX, e.offsetY]); bouge = false;
+  if (pointeurs.size === 2) { const [a,b] = [...pointeurs.values()]; pinch = Math.hypot(a[0]-b[0], a[1]-b[1]); glisse = null; fige = null; return; }
+  const p = noeudSous(e.offsetX, e.offsetY);
+  glisse = p ? {type:"noeud", p} : {type:"vue", x:e.offsetX - vue.x, y:e.offsetY - vue.y};
+  if (p) { fige = p; reveil(.15); }
+  cv.classList.add("drag");
+});
+cv.addEventListener("pointermove", e => {
+  const avant = pointeurs.get(e.pointerId);
+  if (avant) pointeurs.set(e.pointerId, [e.offsetX, e.offsetY]);
+  if (pointeurs.size === 2) {
+    const [a,b] = [...pointeurs.values()], d = Math.hypot(a[0]-b[0], a[1]-b[1]);
+    if (pinch) zoom((a[0]+b[0])/2, (a[1]+b[1])/2, d / pinch); pinch = d; bouge = true; return;
+  }
+  if (glisse) {
+    if (avant && Math.hypot(e.offsetX-avant[0], e.offsetY-avant[1]) > .5) bouge = true;
+    if (glisse.type === "vue") { vue.x = e.offsetX - glisse.x; vue.y = e.offsetY - glisse.y; }
+    else { const [x,y] = monde(e.offsetX, e.offsetY); glisse.p.x = x; glisse.p.y = y; reveil(.12); }
+    return;
+  }
+  const p = noeudSous(e.offsetX, e.offsetY);
+  survol = p; cv.style.cursor = p ? "pointer" : "grab";
+  const b = $("#bulle");
+  if (p && e.pointerType === "mouse") {
+    b.style.display = "block"; b.style.left = Math.min(e.offsetX + 14, W - 270) + "px"; b.style.top = (e.offsetY + 14) + "px";
+    b.innerHTML = `<b>${esc(p.f.titre)}</b><span>${esc(p.f.domaine)} · ${voisins.get(p.f.id).size} lien(s)</span>`;
+  } else b.style.display = "none";
+});
+function relacher(e){
+  pointeurs.delete(e.pointerId); if (pointeurs.size < 2) pinch = 0;
+  if (glisse && !bouge) {
+    if (glisse.type === "noeud") ouvrir(glisse.p.f.id);
+    else if (choisi) fermer();
+  }
+  glisse = null; fige = null; cv.classList.remove("drag");
+}
+cv.addEventListener("pointerup", relacher);
+cv.addEventListener("pointercancel", relacher);
+cv.addEventListener("pointerleave", () => { survol = null; $("#bulle").style.display = "none"; });
+function zoom(sx, sy, f){
+  const k = Math.max(.15, Math.min(6, vue.k * f)); f = k / vue.k;
+  vue.x = sx - W/2 - (sx - W/2 - vue.x) * f; vue.y = sy - H/2 - (sy - H/2 - vue.y) * f; vue.k = k;
+}
+cv.addEventListener("wheel", e => { e.preventDefault(); zoom(e.offsetX, e.offsetY, Math.exp(-e.deltaY * .0015)); }, {passive:false});
+cv.addEventListener("dblclick", () => cadrer());
+
+// ---------- panneau fiche ----------
+function md(src){
+  const blocs = []; src = src.replace(/```[\s\S]*?```/g, m => { blocs.push(m.slice(3,-3).replace(/^\w*\n/,"")); return `\u0000${blocs.length-1}\u0000`; });
+  let h = esc(src);
+  const inline = t => t
+    .replace(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]+))?\]\]/g, (m, cible, txt) => {
+      const id = trouver(cible); return `<span class="wl ${id?"":"mort"}" data-id="${id||""}" title="${id?"":"Fiche pas encore créée"}">${txt||cible}</span>`; })
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<i>$2</i>")
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const out = []; let liste = false;
+  for (const ligne of h.split("\n")) {
+    const m = ligne.match(/^(#{1,6})\s+(.*)/), li = ligne.match(/^\s*[-*]\s+(.*)/), bq = ligne.match(/^&gt;\s?(.*)/), code = ligne.match(/^\u0000(\d+)\u0000$/);
+    if (!li && liste) { out.push("</ul>"); liste = false; }
+    if (code) out.push(`<pre><code>${esc(blocs[+code[1]])}</code></pre>`);
+    else if (m) out.push(`<h4>${inline(m[2])}</h4>`);
+    else if (li) { if (!liste) { out.push("<ul>"); liste = true; } out.push(`<li>${inline(li[1])}</li>`); }
+    else if (bq) out.push(`<blockquote>${inline(bq[1])}</blockquote>`);
+    else if (ligne.trim()) out.push(`<p>${inline(ligne)}</p>`);
+  }
+  if (liste) out.push("</ul>");
+  return out.join("");
+}
+function slug(t){ return t.normalize("NFKD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""); }
+function trouver(cible){ const s = slug(cible.split("/").pop()); if (parId.has(s)) return s; const f = fiches.find(f => slug(f.titre) === s); return f ? f.id : null; }
+const ligneItem = f => `<button class="item" data-id="${esc(f.id)}"><i style="background:${couleur[f.domaine]}"></i><span>${esc(f.titre)}</span><small>${esc(f.domaine)}</small></button>`;
+
+function ouvrir(id){
+  const f = parId.get(id); if (!f) return;
+  choisi = nParId.get(id);
+  const sortants = f.liens.map(i => parId.get(i)).filter(Boolean), ent = entrants(id).filter(g => !f.liens.includes(g.id));
+  $("#droite").innerHTML = `<div class="fiche">
+    <button class="fermer" id="fermer" title="Fermer (Échap)">×</button>
+    <div class="meta"><span class="puce"><i style="background:${couleur[f.domaine]}"></i>${esc(f.domaine)}</span>${f.toujours?'<span class="puce">⭐ toujours relue</span>':""}${f.tags.map(t=>`<span class="puce">#${esc(t)}</span>`).join("")}</div>
+    <h2>${esc(f.titre)}</h2>
+    <div class="meta"><span>créée ${dateFr(f.cree)}</span><span>· modifiée ${dateFr(f.maj)}</span><span>· ${fmt(f.mots)} mots</span></div>
+  </div>
+  <section class="corps">${md(f.contenu.replace(/^#\s+.*\n+/, ""))}</section>
+  <section><h3>Elle pointe vers (${sortants.length})</h3><div class="liste">${sortants.map(ligneItem).join("") || '<span class="vide">Aucun lien sortant</span>'}</div></section>
+  <section><h3>Citée par (${ent.length + sortants.filter(g => g.liens.includes(id)).length})</h3><div class="liste">${[...ent, ...sortants.filter(g => g.liens.includes(id))].map(ligneItem).join("") || '<span class="vide">Personne ne cite cette fiche</span>'}</div></section>
+  ${f.chemin ? `<p class="vide">📄 ${esc(f.chemin)}</p>` : ""}`;
+  $("#droite").scrollTop = 0; $("#droite").classList.add("ouvert"); $("#gauche").classList.remove("ouvert");
+  $("#fermer").onclick = fermer;
+  centrerSur(choisi);
+}
+function centrerSur(p){ const cible = {x: -p.x*vue.k - (W > 900 ? 0 : 0), y: -p.y*vue.k - (W <= 900 ? H*.18 : 0)}; anim = {de:{...vue}, a:cible, t:0}; }
+let anim = null;
+(function animer(){ if (anim){ anim.t = Math.min(1, anim.t + .06); const e = 1 - Math.pow(1-anim.t, 3);
+  vue.x = anim.de.x + (anim.a.x - anim.de.x)*e; vue.y = anim.de.y + (anim.a.y - anim.de.y)*e; if (anim.t >= 1) anim = null; }
+  requestAnimationFrame(animer); })();
+
+function accueil(){
+  const recentes = [...fiches].sort((a,b) => b.maj.localeCompare(a.maj)).slice(0, 8);
+  const orphelines = fiches.filter(f => !voisins.get(f.id).size);
+  const casses = fiches.flatMap(f => (f.manquants||[]).map(m => ({f, m})));
+  const hubs = [...fiches].sort((a,b) => voisins.get(b.id).size - voisins.get(a.id).size).slice(0,5);
+  $("#droite").innerHTML = `
+    <section><h3>Modifiées récemment</h3><div class="liste">${recentes.map(ligneItem).join("") || '<span class="vide">Rien pour l\'instant</span>'}</div></section>
+    <section><h3>Les plus reliées</h3><div class="liste">${hubs.map(ligneItem).join("")}</div></section>
+    <section><h3>Orphelines (${orphelines.length})</h3><div class="liste">${orphelines.slice(0,8).map(ligneItem).join("") || '<span class="vide">Toutes tes fiches sont reliées 👌</span>'}</div></section>
+    ${casses.length ? `<section><h3>Fiches à créer (${casses.length})</h3><div class="liste">${casses.slice(0,8).map(c => `<button class="item" data-id="${esc(c.f.id)}"><i style="background:var(--warn)"></i><span>${esc(c.m)}</span><small>cité par ${esc(c.f.titre)}</small></button>`).join("")}</div></section>` : ""}
+    <p class="vide">Astuce : <b>/</b> pour chercher, glisse pour déplacer, molette ou pincement pour zoomer, double-clic pour recadrer.</p>`;
+}
+function fermer(){ choisi = null; accueil(); if (innerWidth <= 900) $("#droite").classList.remove("ouvert"); }
+$("#droite").addEventListener("click", e => { const t = e.target.closest("[data-id]"); if (t && t.dataset.id) ouvrir(t.dataset.id); });
+
+// ---------- recherche ----------
+const q = $("#q"), res = $("#resultats"); let sel = 0, trouves = [];
+const norm = s => s.normalize("NFKD").replace(/[̀-ͯ]/g,"").toLowerCase();
+q.addEventListener("input", () => {
+  const t = norm(q.value.trim());
+  if (!t) { correspond = null; res.classList.remove("ouvert"); return; }
+  const mots = t.split(/\s+/);
+  trouves = fiches.map(f => { const ti = norm(f.titre), co = norm(f.contenu + " " + f.tags.join(" "));
+    let s = 0; for (const m of mots) { if (ti.includes(m)) s += 3; else if (co.includes(m)) s += 1; else return null; } return {f, s}; })
+    .filter(Boolean).sort((a,b) => b.s - a.s).map(x => x.f);
+  correspond = new Set(trouves.map(f => f.id)); sel = 0; afficherRes();
+});
+function afficherRes(){
+  res.innerHTML = trouves.slice(0, 12).map((f,i) => `<div class="res ${i===sel?"sel":""}" data-id="${esc(f.id)}"><i style="background:${couleur[f.domaine]}"></i>${esc(f.titre)}<small>${esc(f.domaine)}</small></div>`).join("")
+    || '<div class="res"><span class="vide">Aucune fiche ne correspond</span></div>';
+  res.classList.add("ouvert");
+}
+q.addEventListener("keydown", e => {
+  if (e.key === "ArrowDown") { sel = Math.min(sel+1, Math.min(trouves.length,12)-1); afficherRes(); e.preventDefault(); }
+  if (e.key === "ArrowUp") { sel = Math.max(sel-1, 0); afficherRes(); e.preventDefault(); }
+  if (e.key === "Enter" && trouves[sel]) choisirRes(trouves[sel].id);
+  if (e.key === "Escape") { q.value = ""; q.dispatchEvent(new Event("input")); q.blur(); }
+});
+res.addEventListener("pointerdown", e => { const r = e.target.closest("[data-id]"); if (r) { e.preventDefault(); choisirRes(r.dataset.id); } });
+function choisirRes(id){ q.value = ""; correspond = null; res.classList.remove("ouvert"); q.blur(); ouvrir(id); }
+q.addEventListener("blur", () => setTimeout(() => res.classList.remove("ouvert"), 120));
+addEventListener("keydown", e => {
+  if (e.key === "/" && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+  if (e.key === "Escape" && document.activeElement !== q) fermer();
+});
+
+// ---------- frise temporelle ----------
+const curseur = $("#temps"); let lecture = false;
+function majTemps(){
+  const v = +curseur.value;
+  tLimite = v >= 1000 ? Infinity : t0 + (t1 - t0) * v / 1000;
+  $("#date").textContent = v >= 1000 ? "aujourd'hui" : new Date(tLimite).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+}
+curseur.oninput = () => { lecture = false; $("#lecture").textContent = "▶"; majTemps(); };
+$("#lecture").onclick = () => { lecture = !lecture; $("#lecture").textContent = lecture ? "❚❚" : "▶"; if (lecture && +curseur.value >= 1000) curseur.value = 0; };
+function avancer(){ curseur.value = Math.min(1000, +curseur.value + 4); majTemps(); if (+curseur.value >= 1000) { lecture = false; $("#lecture").textContent = "▶"; } }
+
+// ---------- divers ----------
+$("#capture").onclick = () => { const a = document.createElement("a"); a.download = `cortex-${new Date().toISOString().slice(0,10)}.png`; a.href = cv.toDataURL("image/png"); a.click(); };
+$("#mStats").onclick = () => { $("#gauche").classList.toggle("ouvert"); $("#droite").classList.remove("ouvert"); };
+$("#mFiche").onclick = () => { $("#droite").classList.toggle("ouvert"); $("#gauche").classList.remove("ouvert"); };
+addEventListener("resize", () => { taille(); });
+taille();
+for (let i = 0; i < 260; i++) tick();
+cadrer(); accueil();
+requestAnimationFrame(boucle);
+</script>
+</body>
+</html>

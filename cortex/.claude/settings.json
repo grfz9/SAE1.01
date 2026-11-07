@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/outils/contexte.py\"", "timeout": 10 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/outils/construire.py\" --silencieux", "timeout": 20 }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Read(./**)",
+      "Edit(./fiches/**)",
+      "Write(./fiches/**)",
+      "Bash(python3 outils/construire.py:*)"
+    ]
+  }
+}
